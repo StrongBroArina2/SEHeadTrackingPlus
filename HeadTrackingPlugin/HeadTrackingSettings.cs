@@ -24,6 +24,15 @@ namespace HeadTrackingPlugin
         public bool InvertYaw = false;
         public bool InvertRoll = false;
 
+        public bool EnablePositionalTracking = true;
+        public float PositionScale = 0.001f;
+
+        public bool InvertX = false;
+        public bool InvertY = false;
+        public bool InvertZ = false;
+
+        public bool UseNewPositionMethod = true; // Альтернатива Сетки Смещения
+
         private static HeadTrackingSettings _Instance=null;
 
         public static HeadTrackingSettings Instance

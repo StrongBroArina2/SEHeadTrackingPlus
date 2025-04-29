@@ -27,7 +27,7 @@ namespace HeadTrackingPlugin
         static SessionComponent()
         {
             var appdata = Environment.GetEnvironmentVariable("appdata");
-            ConfigFilePath = appdata + $"/SpaceEngineers/HeadTrackingPlugin.cfg";
+            ConfigFilePath = appdata + $"/SpaceEngineers/HeadTrackingPluginPlus.cfg";
         }
 
         public override void LoadData()
@@ -74,7 +74,7 @@ namespace HeadTrackingPlugin
             }
 
             var mode = TestMode ? "ON" : "OFF";
-            MyAPIGateway.Utilities.ShowMessage("HeadTracking", $"Test mode is {mode}");
+            //MyAPIGateway.Utilities.ShowMessage("HeadTracking", $"Test mode is {mode}"); СДОХНИИИ! УРААА!
         }
 
         public override void Draw()
@@ -89,33 +89,52 @@ namespace HeadTrackingPlugin
         {
             var settings = HeadTrackingSettings.Instance;
 
+            // Проверка активности трекинга
             bool isCharacter = MyAPIGateway.Session?.Player?.Character == MyAPIGateway.Session?.CameraController;
             bool isFps = MyAPIGateway.Session?.CameraController?.IsInFirstPersonView ?? false;
-            bool active = settings.Enabled &&
-                (!isCharacter ||
-                    (settings.EnabledInCharacter
-                     && (!isFps || settings.EnabledInFirstPerson)));
+            bool active = settings.Enabled && (!isCharacter || (settings.EnabledInCharacter && (!isFps || settings.EnabledInFirstPerson)));
 
-            if (active)
+            if (!active) return;
+
+            // Получаем углы с учетом инверсии
+            float pitch = (settings.InvertPitch ? -1 : 1) * FreeTrackClient.Pitch;
+            float yaw = (settings.InvertYaw ? -1 : 1) * -FreeTrackClient.Yaw;
+            float roll = (settings.InvertRoll ? -1 : 1) * FreeTrackClient.Roll;
+
+            // Создаем базовое смещение (только если включен позиционный трекинг)
+            Vector3D offset = Vector3D.Zero;
+            if (settings.EnablePositionalTracking)
             {
-                var signPitch = settings.InvertPitch ? -1 : 1;
-                var signYaw = settings.InvertYaw ? -1 : 1;
-                var signRoll = settings.InvertRoll ? -1 : 1;
+                offset = new Vector3D(
+                    (settings.InvertX ? -1 : 1) * FreeTrackClient.PosX * settings.PositionScale * 0.01,
+                    (settings.InvertY ? -1 : 1) * FreeTrackClient.PosY * settings.PositionScale * 0.01,
+                    (settings.InvertZ ? -1 : 1) * FreeTrackClient.PosZ * settings.PositionScale * 0.01);
 
-                var rotX = MatrixD.CreateRotationX(signPitch * FreeTrackClient.Pitch);
-                var rotY = MatrixD.CreateRotationY(signYaw * -FreeTrackClient.Yaw);
-                var rotZ = MatrixD.CreateRotationZ(signRoll * FreeTrackClient.Roll);
-
-                var camera = (MyCamera)MyAPIGateway.Session.Camera;
-
-                if (camera != null)
+                // Применяем новый метод если включен
+                if (!settings.UseNewPositionMethod) // Инвертируем условие
                 {
-                    MatrixD m = camera.ViewMatrix * rotZ * rotY * rotX;
-                    camera.SetViewMatrix(m);
-                    camera.UploadViewMatrixToRender();
+                    MatrixD rotation = MatrixD.CreateRotationY(yaw) * MatrixD.CreateRotationX(pitch) * MatrixD.CreateRotationZ(roll);
+                    Vector3D transformedZ = Vector3D.TransformNormal(new Vector3D(0, 0, offset.Z), rotation);
+                    offset.Z = transformedZ.Z; // Только для Z оси
                 }
             }
+
+            // Применяем к камере
+            var camera = (MyCamera)MyAPIGateway.Session.Camera;
+            if (camera != null)
+            {
+                MatrixD viewMatrix = camera.ViewMatrix *
+                                   MatrixD.CreateRotationZ(roll) *
+                                   MatrixD.CreateRotationY(yaw) *
+                                   MatrixD.CreateRotationX(pitch);
+
+                viewMatrix.Translation += offset;
+                camera.SetViewMatrix(viewMatrix);
+                camera.UploadViewMatrixToRender();
+            }
         }
+
+
 
         public static void DrawSync()
         {

@@ -30,6 +30,12 @@ namespace HeadTrackingPlugin
         public static float Yaw { get { return instance.yaw_; } }
         public static float Roll { get { return instance.roll_; } }
 
+        public static float PosX { get { return instance.posX_; } }
+        public static float PosY { get { return instance.posY_; } }
+        public static float PosZ { get { return instance.posZ_; } }
+
+        private float posX_, posY_, posZ_;
+
         private float pitch_, yaw_, roll_;
 
         private double startTime = 1.0 * System.DateTime.Now.Ticks / TimeSpan.TicksPerSecond;
@@ -140,6 +146,7 @@ namespace HeadTrackingPlugin
             bool updated = false;
 
             float pitch = 0, roll = 0, yaw = 0;
+            float posX = 0, posY = 0, posZ = 0;
 
             Acquire();
 
@@ -159,6 +166,9 @@ namespace HeadTrackingPlugin
                     yaw = data.Yaw;
                     pitch = data.Pitch;
                     roll = data.Roll;
+                    posX = data.X;    // Добавить
+                    posY = data.Y;    // Добавить
+                    posZ = data.Z;    // Добавить
 
                     updated = true;
 
@@ -180,16 +190,17 @@ namespace HeadTrackingPlugin
             if (SessionComponent.Instance?.TestMode ?? false)
             {
                 double time = 1.0 * System.DateTime.Now.Ticks / TimeSpan.TicksPerSecond;
-
                 yaw += 0.5f * (float)Math.Sin(time - startTime);
                 pitch += 0.5f * (float)Math.Cos(time - startTime);
-
-                updated = true;
+                posX = 0.1f * (float)Math.Sin(time - startTime); // Добавить тестовое смещение
             }
 
             roll_ = roll;
             pitch_ = pitch;
             yaw_ = yaw;
+            posX_ = posX;  // Добавить
+            posY_ = posY;  // Добавить
+            posZ_ = posZ;  // Добавить
 
             if (System.DateTime.Now.Ticks - lastUpdateTime > updateTimeout)
             {
