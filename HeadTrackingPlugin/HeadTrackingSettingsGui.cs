@@ -208,7 +208,7 @@ namespace HeadTrackingPlugin
             AddLabel(invertZCheckbox, "Invert Z Axis");
             index2++;
 
-            // Добавляем новый чекбокс для UseNewPositionMethod
+            // UseNewPositionMethod
             var positionMethodCheckbox = new MyGuiControlCheckbox(
                 position: new Vector2(column2X + HorizontalSpace, baseY + index2 * VerticalDelta),
                 toolTip: "Use new position method (accounts for head rotation but may result in  wacky behavior)",

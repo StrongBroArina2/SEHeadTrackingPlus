@@ -89,19 +89,19 @@ namespace HeadTrackingPlugin
         {
             var settings = HeadTrackingSettings.Instance;
 
-            // Проверка активности трекинга
+            // Проверка активности трекинга лол
             bool isCharacter = MyAPIGateway.Session?.Player?.Character == MyAPIGateway.Session?.CameraController;
             bool isFps = MyAPIGateway.Session?.CameraController?.IsInFirstPersonView ?? false;
             bool active = settings.Enabled && (!isCharacter || (settings.EnabledInCharacter && (!isFps || settings.EnabledInFirstPerson)));
 
             if (!active) return;
 
-            // Получаем углы с учетом инверсии
+            // Углы с учетом инверсии
             float pitch = (settings.InvertPitch ? -1 : 1) * FreeTrackClient.Pitch;
             float yaw = (settings.InvertYaw ? -1 : 1) * -FreeTrackClient.Yaw;
             float roll = (settings.InvertRoll ? -1 : 1) * FreeTrackClient.Roll;
 
-            // Создаем базовое смещение (только если включен позиционный трекинг)
+            // Базовое смещение (только если включен позиционный трекинг)
             Vector3D offset = Vector3D.Zero;
             if (settings.EnablePositionalTracking)
             {
@@ -110,16 +110,16 @@ namespace HeadTrackingPlugin
                     (settings.InvertY ? -1 : 1) * FreeTrackClient.PosY * settings.PositionScale * 0.01,
                     (settings.InvertZ ? -1 : 1) * FreeTrackClient.PosZ * settings.PositionScale * 0.01);
 
-                // Применяем новый метод если включен
-                if (!settings.UseNewPositionMethod) // Инвертируем условие
+                // Нов метд
+                if (!settings.UseNewPositionMethod) // Инвертируем 
                 {
                     MatrixD rotation = MatrixD.CreateRotationY(yaw) * MatrixD.CreateRotationX(pitch) * MatrixD.CreateRotationZ(roll);
                     Vector3D transformedZ = Vector3D.TransformNormal(new Vector3D(0, 0, offset.Z), rotation);
-                    offset.Z = transformedZ.Z; // Только для Z оси
+                    offset.Z = transformedZ.Z; // Только для Z VO ГОЙДА УРААААА оси
                 }
             }
 
-            // Применяем к камере
+            // Камере
             var camera = (MyCamera)MyAPIGateway.Session.Camera;
             if (camera != null)
             {

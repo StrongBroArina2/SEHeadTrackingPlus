@@ -166,9 +166,9 @@ namespace HeadTrackingPlugin
                     yaw = data.Yaw;
                     pitch = data.Pitch;
                     roll = data.Roll;
-                    posX = data.X;    // Добавить
-                    posY = data.Y;    // Добавить
-                    posZ = data.Z;    // Добавить
+                    posX = data.X;    // ХЮЗ
+                    posY = data.Y;    
+                    posZ = data.Z;    
 
                     updated = true;
 
@@ -192,15 +192,15 @@ namespace HeadTrackingPlugin
                 double time = 1.0 * System.DateTime.Now.Ticks / TimeSpan.TicksPerSecond;
                 yaw += 0.5f * (float)Math.Sin(time - startTime);
                 pitch += 0.5f * (float)Math.Cos(time - startTime);
-                posX = 0.1f * (float)Math.Sin(time - startTime); // Добавить тестовое смещение
+                posX = 0.1f * (float)Math.Sin(time - startTime); // Смещеник
             }
 
             roll_ = roll;
             pitch_ = pitch;
             yaw_ = yaw;
-            posX_ = posX;  // Добавить
-            posY_ = posY;  // Добавить
-            posZ_ = posZ;  // Добавить
+            posX_ = posX;  // ХЮЗ
+            posY_ = posY;  
+            posZ_ = posZ;  
 
             if (System.DateTime.Now.Ticks - lastUpdateTime > updateTimeout)
             {
