@@ -1,5 +1,12 @@
-# SEHeadTracking
-Head Tracking Plugin for Space Engineers.
+# SEHeadTrackingPlus
+Updated Head Tracking Plugin for Space Engineers.
+Includes more featureas and bugfixes.
+
+
+
+
+
+# Original Description
 
 Head tracking is commonly used in flight simulator games to use head movements to look around. If you don't have a head tracking system yet, no worries! As long as you have a webcam, you can easily get in on the action, thanks to [**opentrack**](https://github.com/opentrack/opentrack#readme)!
 
