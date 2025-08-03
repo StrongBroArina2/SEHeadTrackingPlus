@@ -8,6 +8,9 @@ using Sandbox.Graphics.GUI;
 using VRage;
 using VRage.Utils;
 using VRageMath;
+using VRage.Input;
+using Sandbox.Game.GUI;
+using VRage.Audio;
 
 namespace HeadTrackingPlugin
 {
@@ -16,6 +19,10 @@ namespace HeadTrackingPlugin
         private static readonly float HorizontalSpace = 25.0f / MyGuiConstants.GUI_OPTIMAL_SIZE.X;
         private static readonly float VerticalDelta = MyGuiConstants.CONTROLS_DELTA.Y;
         private static readonly float LabelOffsetX = -0.2f;
+
+        private bool isBindingKey = false;
+        private MyGuiControlButton bindKeyButton;
+        private MyGuiControlAssignKeyMessageBox keyBindingMessageBox;
 
         public override string GetFriendlyName()
         {
@@ -93,6 +100,16 @@ namespace HeadTrackingPlugin
             inFpsCheckbox.IsCheckedChanged += (box) => { settings.EnabledInFirstPerson = box.IsChecked; };
             Controls.Add(inFpsCheckbox);
             AddLabel(inFpsCheckbox, "Head Tracking In FPS", offsetX: HorizontalSpace);
+            index1++;
+
+            bindKeyButton =
+    new MyGuiControlButton(
+        position: new Vector2(column1X + HorizontalSpace, baseY + index1 * VerticalDelta),
+        text: new StringBuilder("Bind Key (" + settings.EnableToggleKey + ")"),
+        toolTip: "Assign a key to toggle head tracking on/off",
+        originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP,
+        onButtonClick: (_) => StartKeyBinding());
+            Controls.Add(bindKeyButton);
             index1++;
 
             // Первая колонка: Настройки вращения
@@ -211,7 +228,7 @@ namespace HeadTrackingPlugin
             // UseNewPositionMethod
             var positionMethodCheckbox = new MyGuiControlCheckbox(
                 position: new Vector2(column2X + HorizontalSpace, baseY + index2 * VerticalDelta),
-                toolTip: "Use new position method (accounts for head rotation but may result in  wacky behavior)",
+                toolTip: "Use new position method (accounts for head rotation but may result in a wacky behavior)",
                 isChecked: settings.UseNewPositionMethod,
                 originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
             positionMethodCheckbox.IsCheckedChanged += (box) => { settings.UseNewPositionMethod = box.IsChecked; };
@@ -273,9 +290,137 @@ namespace HeadTrackingPlugin
                 originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER));
         }
 
+        private void StartKeyBinding()
+        {
+            isBindingKey = true;
+            keyBindingMessageBox = new MyGuiControlAssignKeyMessageBox(MyGuiInputDeviceEnum.Keyboard, "HeadTrackingToggle", MyCommonTexts.AssignControlKeyboard);
+            keyBindingMessageBox.Closed += (screen, isUnloading) =>
+            {
+                isBindingKey = false;
+                var settings = HeadTrackingSettings.Instance;
+                bindKeyButton.Text = "Bind Key (" + settings.EnableToggleKey + ")";
+                if (!isUnloading)
+                {
+                    settings.Save();
+                }
+            };
+            MyGuiSandbox.AddScreen(keyBindingMessageBox);
+        }
+
+        public override void HandleInput(bool receivedFocusInThisUpdate)
+        {
+            base.HandleInput(receivedFocusInThisUpdate);
+        }
+
         protected override void OnClosed()
         {
+            isBindingKey = false;
+            if (keyBindingMessageBox != null)
+            {
+                keyBindingMessageBox.CloseScreen();
+                keyBindingMessageBox = null;
+            }
             HeadTrackingSettings.Reload();
+        }
+
+        private class MyGuiControlAssignKeyMessageBox : MyGuiScreenMessageBox
+        {
+            private readonly string controlId;
+            private readonly MyGuiInputDeviceEnum deviceType;
+            private readonly List<MyKeys> newPressedKeys = new List<MyKeys>();
+            private readonly List<MyKeys> oldPressedKeys = new List<MyKeys>();
+            private MyGuiControlLabel keysLabel;
+
+            public MyGuiControlAssignKeyMessageBox(MyGuiInputDeviceEnum deviceType, string controlId, MyStringId messageText)
+                : base(MyMessageBoxStyleEnum.Error,
+                       MyMessageBoxButtonsType.NONE,
+                       MyTexts.Get(messageText),
+                       MyTexts.Get(MyCommonTexts.SelectControl),
+                       default(MyStringId), default(MyStringId), default(MyStringId), default(MyStringId),
+                       null, 0, MyGuiScreenMessageBox.ResultEnum.YES, true, null, 0f, 0f, null, true, false, null, false, null, true)
+            {
+                this.controlId = controlId;
+                this.deviceType = deviceType;
+                DrawMouseCursor = false;
+                m_isTopMostScreen = false;
+                m_closeOnEsc = false;
+                CanBeHidden = true;
+                MyInput.Static.GetListOfPressedKeys(oldPressedKeys);
+            }
+
+            public override void RecreateControls(bool constructor)
+            {
+                base.RecreateControls(constructor);
+                var controlLabel = new MyGuiControlLabel(
+                    position: new Vector2(0f, 0.015f),
+                    text: "Head Tracking Toggle",
+                    textScale: 0.9f,
+                    font: "Blue",
+                    originAlign: MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER);
+                keysLabel = new MyGuiControlLabel(
+                    position: new Vector2(0f, 0.04f),
+                    text: "",
+                    textScale: 0.8f,
+                    font: "Blue",
+                    originAlign: MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER);
+                var separator = new MyGuiControlSeparatorList();
+                separator.AddHorizontal(new Vector2(m_size.Value.X * 0.691f / 2f, -0.075f), m_size.Value.X * 0.691f);
+                var escLabel = new MyGuiControlLabel(
+                    position: new Vector2(0f, 0.1f),
+                    text: MyTexts.GetString(MyCommonTexts.KeySetupEscCancel),
+                    textScale: 0.8f,
+                    font: "Blue",
+                    originAlign: MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER);
+                Controls.Add(controlLabel);
+                Controls.Add(keysLabel);
+                Controls.Add(separator);
+                Controls.Add(escLabel);
+            }
+
+            public override void HandleInput(bool receivedFocusInThisUpdate)
+            {
+                base.HandleInput(receivedFocusInThisUpdate);
+                if (MyInput.Static.IsNewKeyPressed(MyKeys.Escape) || MyControllerHelper.IsControl(MyControllerHelper.CX_GUI, MyControlsGUI.CANCEL, MyControlStateType.NEW_PRESSED))
+                {
+                    Canceling();
+                    return;
+                }
+                if (State == MyGuiScreenState.CLOSING || State == MyGuiScreenState.HIDING)
+                {
+                    return;
+                }
+                if (deviceType == MyGuiInputDeviceEnum.Keyboard)
+                {
+                    HandleKey();
+                }
+            }
+
+            private void HandleKey()
+            {
+                newPressedKeys.Clear();
+                MyInput.Static.GetListOfPressedKeys(newPressedKeys);
+                if (newPressedKeys.Count == 0)
+                {
+                    return;
+                }
+                var key = newPressedKeys[0];
+                if (!oldPressedKeys.Contains(key) && MyInput.Static.IsKeyValid(key))
+                {
+                    MyGuiAudio.PlaySound(MyGuiSounds.HudMouseClick);
+                    var settings = HeadTrackingSettings.Instance;
+                    settings.EnableToggleKey = key;
+                    keysLabel.Text = key.ToString();
+                    oldPressedKeys.Clear();
+                    oldPressedKeys.AddRange(newPressedKeys);
+                    CloseScreen();
+                }
+            }
+
+            public override bool CloseScreen(bool isUnloading = false)
+            {
+                DrawMouseCursor = true;
+                return base.CloseScreen(isUnloading);
+            }
         }
     }
 }

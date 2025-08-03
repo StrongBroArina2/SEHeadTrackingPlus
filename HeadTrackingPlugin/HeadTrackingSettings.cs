@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using VRage.FileSystem;
+using VRage.Input;
 
 namespace HeadTrackingPlugin
 {
@@ -31,9 +32,11 @@ namespace HeadTrackingPlugin
         public bool InvertY = false;
         public bool InvertZ = false;
 
-        public bool UseNewPositionMethod = true; // Альтернатива Сетки Смещения
+        public bool UseNewPositionMethod = true;
 
-        private static HeadTrackingSettings _Instance=null;
+        public MyKeys EnableToggleKey = MyKeys.None; // Enable
+
+        private static HeadTrackingSettings _Instance = null;
 
         public static HeadTrackingSettings Instance
         {
